@@ -99,3 +99,16 @@ class ProductCategoryUpdate(BaseModel):
     
     class Config:
         orm_mode = True
+
+class ProductSearch(BaseModel):
+    group_name: Optional[str] = None
+    category_name: Optional[str] = None
+    product_name: Optional[str] = None
+    supplier: Optional[str] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    discount_price: Optional[bool] = None
+    quantity: Optional[bool] = None
+    
+    class Config:
+        orm_mode = True

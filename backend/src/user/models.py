@@ -16,8 +16,8 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     
-    orders = relationship("Order", back_populates='user')
-    transactions = relationship("Transaction", back_populates='user')
+    orders = relationship("Order", back_populates='user', cascade="all, delete")
+    transactions = relationship("Transaction", back_populates='user', cascade="all, delete")
     
 class Transaction(Base):
     __tablename__ = 'transactions'
@@ -26,6 +26,7 @@ class Transaction(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     old_amount = Column(DECIMAL, nullable=False)
     new_amount = Column(DECIMAL, nullable=False)
+    total_amount = Column(DECIMAL)
     transaction_type = Column(String, nullable=False)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))

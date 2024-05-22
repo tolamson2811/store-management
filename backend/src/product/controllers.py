@@ -1,9 +1,11 @@
+from sqlalchemy import func
 from database import get_db
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from product import models
 from product import schemas
 from product import validation
+from unidecode import unidecode
 
 
 # Product controller 
@@ -121,3 +123,30 @@ def delete_product_category(category_id: int, db: Session = Depends(get_db)):
     db.delete(db_category)
     db.commit()
     return {"message": "Product category deleted successfully"}
+
+# search controller 
+def search_products(form: schemas.ProductSearch, db: Session = Depends(get_db)):
+    query = db.query(models.Product).join(models.ProductCategory).join(models.ProductGroup)
+    if form.group_name:
+        form.group_name = form.group_name.strip()
+        query = query.filter(func.lower(func.unaccent(models.ProductGroup.name)).like(f"%{unidecode(form.group_name.lower())}%"))
+    if form.category_name:
+        form.category_name = form.category_name.strip()
+        query = query.filter(func.lower(func.unaccent(models.ProductCategory.name)).like(f"%{unidecode(form.category_name.lower())}%"))
+    if form.product_name:
+        form.product_name = form.product_name.strip()
+        query = query.filter(func.lower(func.unaccent(models.Product.name)).like(f"%{unidecode(form.product_name.lower())}%"))
+    if form.supplier:
+        form.supplier = form.supplier.strip()
+        query = query.filter(func.lower(func.unaccent(models.Product.supplier)).like(f"%{unidecode(form.supplier.lower())}%"))
+    if form.min_price and not form.max_price:
+        query = query.filter(models.Product.price >= form.min_price)
+    if form.max_price and not form.min_price:
+        query = query.filter(models.Product.price <= form.max_price)
+    if form.min_price and form.max_price:
+        query = query.filter(models.Product.price >= form.min_price).filter(models.Product.price <= form.max_price)
+    if form.discount_price is True:
+        query = query.filter(models.Product.discount_price > 0)
+    if form.quantity is True:
+        query = query.filter(models.Product.quantity > 0)
+    return query.all()

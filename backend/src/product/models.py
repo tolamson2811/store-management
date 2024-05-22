@@ -18,9 +18,9 @@ class Product(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     
-    product_group = relationship("ProductGroup", back_populates="products")
-    product_category = relationship("ProductCategory", back_populates="products")
-    order_details = relationship("OrderDetail", back_populates="product")
+    product_group = relationship("ProductGroup", back_populates="products", cascade="all, delete")
+    product_category = relationship("ProductCategory", back_populates="products", cascade="all, delete")
+    order_details = relationship("OrderDetail", back_populates="product", cascade="all, delete")
 
 class ProductGroup(Base):
     __tablename__ = 'product_group'
@@ -30,8 +30,8 @@ class ProductGroup(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))  
     
-    products = relationship("Product", back_populates="product_group")
-    product_categories = relationship("ProductCategory", back_populates="product_group")
+    products = relationship("Product", back_populates="product_group", cascade="all, delete")
+    product_categories = relationship("ProductCategory", back_populates="product_group", cascade="all, delete")
     
 class ProductCategory(Base):
     __tablename__ = 'product_category'
@@ -43,4 +43,4 @@ class ProductCategory(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     
     product_group = relationship("ProductGroup", back_populates="product_categories")
-    products = relationship("Product", back_populates="product_category")
+    products = relationship("Product", back_populates="product_category", cascade="all, delete")

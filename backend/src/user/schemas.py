@@ -13,23 +13,14 @@ class TransactionType(str, Enum):
     WITHDRAW = "WITHDRAW"
     DEPOSIT = "DEPOSIT"
     
-class User(BaseModel):
-    id: int
+class UserBase(BaseModel):
     email: str
     password: str
-    username: str
-    phone_number: str
-    role: UserRole = UserRole.CUSTOMER
-    wallet_balance: Decimal
-    created_at: datetime
-    updated_at: datetime
     
     class Config:
         orm_mode = True
         
-class UserCreate(BaseModel):
-    email: str
-    password: str
+class UserCreate(UserBase):
     username: str
     phone_number: str
     role: UserRole = UserRole.CUSTOMER
@@ -39,25 +30,25 @@ class UserCreate(BaseModel):
     class Config:
         orm_mode = True
         
-class UserUpdate(BaseModel):
-    username: Optional[str]
-    phone_number: Optional[str]
-    wallet_balance: Optional[Decimal]
+class UserUpdate(UserBase):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    username: Optional[str] = None
+    phone_number: Optional[str] = None
+    wallet_balance: Optional[Decimal] = None
     updated_at: datetime
         
     class Config:
         orm_mode = True
         
-class UserLogin(BaseModel):
+class UserLogin(UserBase):
     email: str
     password: str
         
     class Config:
         orm_mode = True
 
-class UserChangePassword(BaseModel):
-    email: str
-    old_password: str
+class UserChangePassword(UserBase):
     new_password: str
         
     class Config:
@@ -68,7 +59,8 @@ class WalletCharge(BaseModel):
         
     class Config:
         orm_mode = True
-        
+
+# transaction schemas
 class Transaction(BaseModel):
     id: int
     user_id: int

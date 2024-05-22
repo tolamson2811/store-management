@@ -12,7 +12,7 @@ class Order(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     
     user = relationship("User", back_populates="orders")
-    order_details = relationship("OrderDetail", back_populates="order")
+    order_details = relationship("OrderDetail", back_populates="order", cascade="all, delete")
     
 class OrderDetail(Base):
     __tablename__ = 'order_detail'

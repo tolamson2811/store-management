@@ -7,6 +7,7 @@ from product import schemas
 
 #product router
 product_router = APIRouter(prefix="/product", tags=['Product'])
+search_product_router = APIRouter(prefix="/product/search", tags=['Product Search'])
 
 @product_router.get('/')
 def get_products(db: Session = Depends(get_db)):
@@ -74,3 +75,8 @@ def update_product_category(category_id: int, category: schemas.ProductCategoryU
 @product_category_router.delete('/{category_id}')
 def delete_product_category(category_id: int, db: Session = Depends(get_db)):
     return controllers.delete_product_category(category_id, db)
+
+# product search router
+@search_product_router.post('')
+def search_products(form: schemas.ProductSearch, db: Session = Depends(get_db)):
+    return controllers.search_products(form, db)

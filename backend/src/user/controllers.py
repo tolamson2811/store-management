@@ -1,14 +1,25 @@
 from datetime import timedelta
+from fastapi import security
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from database import get_db
 from user import models
 from user import schemas
 from user import validation
 
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    if not await validation.validate_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return token
 
 def get_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
@@ -26,7 +37,7 @@ def get_users(db: Session = Depends(get_db)):
         })
     return response_data
 
-def create_user(user: schemas.User, db: Session = Depends(get_db)):
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if not validation.check_email_is_valid(user.email):
         raise HTTPException(status_code=400, detail="Invalid email")
     if not validation.check_email_is_unique(user.email, db):
@@ -61,7 +72,7 @@ def login_for_access_token(user: schemas.UserLogin, db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="Invalid email")
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Email not exists")
     
     if not validation.verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Incorrect password")
@@ -72,11 +83,10 @@ def login_for_access_token(user: schemas.UserLogin, db: Session = Depends(get_db
     )
     return {
         "access_token": access_token,
-        "token_type": "bearer",
-        "access_token_expires": validation.ACCESS_TOKEN_EXPIRE_MINUTES
+        "expires_in": validation.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     }
     
-def change_password(user: schemas.UserChangePassword, db: Session = Depends(get_db)):
+def change_password(user: schemas.UserChangePassword, db: Session = Depends(get_db)):    
     if not validation.check_email_is_valid(user.email):
         raise HTTPException(status_code=400, detail="Invalid email")
     if not validation.check_password_is_valid(user.new_password):
@@ -85,7 +95,7 @@ def change_password(user: schemas.UserChangePassword, db: Session = Depends(get_
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if not validation.verify_password(user.old_password, db_user.password):
+    if not validation.verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Incorrect old password")
     
     hashed_password = validation.get_password_hash(user.new_password)
@@ -115,6 +125,8 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
 
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     response_data = {
         "id": db_user.id,
         "email": db_user.email,
@@ -124,11 +136,9 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
         "wallet_balance": db_user.wallet_balance,
         "created_at": db_user.created_at
     }
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
     return response_data
 
-def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(get_db)):    
+def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(get_db), token: dict = None):  
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -136,6 +146,8 @@ def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail="Invalid username")
     if not validation.check_phone_number_is_valid(user.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number")
+    if token['email'] != db_user.email and token['role'] != "admin":
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
     if user.username is not None:
         db_user.username = user.username
@@ -143,7 +155,11 @@ def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(ge
         db_user.phone_number = user.phone_number
     if user.wallet_balance is not None:
         db_user.wallet_balance = user.wallet_balance
-        
+    if user.email is not None:
+        db_user.email = user.email
+    if user.password is not None:
+        db_user.password = validation.get_password_hash(user.password)
+    
     db_user.updated_at = user.updated_at
     db.commit()
     db.refresh(db_user)
@@ -160,39 +176,15 @@ def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(ge
     }
     return response_data
 
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db), token: str = Depends(get_current_user)):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
+    if token['email'] != db_user.email and token['role'] != "admin":
+        raise HTTPException(status_code=401, detail="Unauthorized")
     db.delete(db_user)
     db.commit()
     return {"message": "User deleted successfully"}
-
-# def charge_wallet(user_id: int, charge: schemas.WalletCharge, db: Session = Depends(get_db)):
-#     db_user = db.query(models.User).filter(models.User.id == user_id).first()
-#     if not db_user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     db_user.wallet_balance = db_user.wallet_balance + charge.amount
-#     db.commit()
-#     db.refresh(db_user)
-    
-#     return {
-#         "wallet_balance": db_user.wallet_balance,
-#     }
-
-# def withdraw_wallet(user_id: int, charge: schemas.WalletCharge, db: Session = Depends(get_db)):
-#     db_user = db.query(models.User).filter(models.User.id == user_id).first()
-#     if not db_user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     if db_user.wallet_balance < charge.amount:
-#         raise HTTPException(status_code=400, detail="Insufficient balance")
-#     db_user.wallet_balance = db_user.wallet_balance - charge.amount
-#     db.commit()
-#     db.refresh(db_user)
-    
-#     return {
-#         "wallet_balance": db_user.wallet_balance,
-#     }
 
 def create_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.id == transaction.user_id).first()
