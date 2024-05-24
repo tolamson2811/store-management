@@ -3,102 +3,88 @@ from datetime import datetime
 from typing import Optional
 
 # Product schema
-class Product(BaseModel):
-    id: int
+class ProductBase(BaseModel):
     name: str
-    image: str
+    image: str    
     price: float
     discount_price: float
     quantity: int
     description: str
     supplier: str
+    
+        
+class ProductCreate(ProductBase):
     group_id: int
     category_id: int
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True 
+    }
         
-class ProductCreate(BaseModel):
-    name: str
-    image: str
-    price: float
-    discount_price: float
-    quantity: int
-    description: str
-    supplier: str
-    group_id: int
-    category_id: int
-    created_at: datetime
+class ProductUpdate(ProductBase):
+    name: Optional[str] = None
+    image: Optional[str] = None
+    price: Optional[float] = None
+    discount_price: Optional[float] = None
+    quantity: Optional[int] = None
+    description: Optional[str] = None
+    supplier: Optional[str] = None
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
-        
-class ProductUpdate(BaseModel):
-    name: Optional[str]
-    image: Optional[str]    
-    price: Optional[float]
-    discount_price: Optional[float]
-    quantity: Optional[int]
-    description: Optional[str]
-    supplier: Optional[str]
-    updated_at: datetime
     
-    class Config:
-        orm_mode = True
-        
         
 # Product group schema
 class ProductGroup(BaseModel):
-    id: int
     name: str
-    created_at: datetime
-    updated_at: datetime
     
-    class Config:
-        orm_mode = True
         
-class ProductGroupCreate(BaseModel):
-    name: str
+class ProductGroupCreate(ProductGroup):
     created_at: datetime
     
-    class Config:
-        orm_mode = True
         
 class ProductGroupUpdate(BaseModel):
     name: Optional[str]
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+class ProductGroupResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = {
+        "from_attributes": True
+    }
+    
 
 # Product category schema
 class ProductCategory(BaseModel):
-    id: int
     name: str
-    group_id: int
-    created_at: datetime
-    updated_at: datetime
     
-    class Config:
-        orm_mode = True
         
-class ProductCategoryCreate(BaseModel):
-    name: str
+class ProductCategoryCreate(ProductCategory):
     group_id: int
     created_at: datetime
     
-    class Config:
-        orm_mode = True
     
-class ProductCategoryUpdate(BaseModel):
+class ProductCategoryUpdate(ProductCategory):
     name: Optional[str]
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+class ProductCategoryResponse(BaseModel):
+    id: int
+    name: str
+    group_id: int
+    product_group: ProductGroupResponse
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = {
+        "from_attributes": True
+    }
+    
 
 class ProductSearch(BaseModel):
     group_name: Optional[str] = None
@@ -110,5 +96,21 @@ class ProductSearch(BaseModel):
     discount_price: Optional[bool] = None
     quantity: Optional[bool] = None
     
-    class Config:
-        orm_mode = True
+class ProductResponse(BaseModel):
+    id: int
+    name: str
+    image: str    
+    price: float
+    discount_price: float
+    quantity: int
+    description: str
+    supplier: str
+    group_id: int
+    category_id: int
+    product_category: ProductCategoryResponse
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = {
+        "from_attributes": True
+    }

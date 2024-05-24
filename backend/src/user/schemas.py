@@ -3,6 +3,7 @@ from typing import Optional
 from enum import Enum
 from datetime import datetime
 from decimal import Decimal
+from order import schemas
 
 class UserRole(str, Enum):
     ADMIN = "ADMIN"
@@ -16,9 +17,6 @@ class TransactionType(str, Enum):
 class UserBase(BaseModel):
     email: str
     password: str
-    
-    class Config:
-        orm_mode = True
         
 class UserCreate(UserBase):
     username: str
@@ -26,9 +24,6 @@ class UserCreate(UserBase):
     role: UserRole = UserRole.CUSTOMER
     wallet_balance: Decimal = 0.0
     created_at: datetime
-        
-    class Config:
-        orm_mode = True
         
 class UserUpdate(UserBase):
     email: Optional[str] = None
@@ -38,66 +33,66 @@ class UserUpdate(UserBase):
     wallet_balance: Optional[Decimal] = None
     updated_at: datetime
         
-    class Config:
-        orm_mode = True
-        
 class UserLogin(UserBase):
     email: str
     password: str
-        
-    class Config:
-        orm_mode = True
+    
+
 
 class UserChangePassword(UserBase):
     new_password: str
         
-    class Config:
-        orm_mode = True
-        
 class WalletCharge(BaseModel):
     amount: Decimal
-        
-    class Config:
-        orm_mode = True
 
 # transaction schemas
-class Transaction(BaseModel):
+class TransactionBase(BaseModel):
+    old_amount: Decimal
+    new_amount: Decimal
+    total_amount: Optional[Decimal] = 0
+    transaction_type: TransactionType
+        
+class TransactionCreate(TransactionBase):
+    user_id: int
+    created_at: datetime
+        
+class TransactionUpdateById(TransactionBase):
+    old_amount: Optional[Decimal] = None
+    new_amount: Optional[Decimal] = None
+    transaction_type: Optional[TransactionType] = None
+    user_id: int
+    updated_at: datetime
+
+class TransactionUpdateByUserId(TransactionBase):
+    updated_at: datetime
+    
+class TransactionResponse(BaseModel):
     id: int
     user_id: int
     old_amount: Decimal
     new_amount: Decimal
+    total_amount: Optional[Decimal]
     transaction_type: TransactionType
+    
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
-        
-class TransactionCreate(BaseModel):
-    user_id: int
-    old_amount: Decimal
-    new_amount: Decimal
-    transaction_type: TransactionType
-    created_at: datetime
-        
-    class Config:
-        orm_mode = True
-        
-class TransactionUpdateById(BaseModel):
-    user_id: int
-    old_amount: Optional[Decimal]
-    new_amount: Optional[Decimal]
-    transaction_type: Optional[TransactionType]
-    updated_at: datetime
-        
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
-class TransactionUpdateByUserId(BaseModel):
-    old_amount: Optional[Decimal]
-    new_amount: Optional[Decimal]
-    transaction_type: Optional[TransactionType]
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    phone_number: str
+    role: UserRole = UserRole.CUSTOMER
+    wallet_balance: Decimal = 0.0
+    transactions: list[TransactionResponse]
+    orders: list[schemas.OrderResponse]
+    created_at: datetime
     updated_at: datetime
-        
-    class Config:
-        orm_mode = True
+    
+    model_config = {
+        "from_attributes": True 
+    }

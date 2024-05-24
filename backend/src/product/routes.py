@@ -4,24 +4,25 @@ from product import controllers
 from database import get_db
 from sqlalchemy.orm import Session
 from product import schemas
+from typing import List
 
 #product router
 product_router = APIRouter(prefix="/product", tags=['Product'])
 search_product_router = APIRouter(prefix="/product/search", tags=['Product Search'])
 
-@product_router.get('/')
+@product_router.get('', response_model=List[schemas.ProductResponse])
 def get_products(db: Session = Depends(get_db)):
     return controllers.get_products(db)
 
-@product_router.get('/{product_id}')
+@product_router.get('/{product_id}', response_model=schemas.ProductResponse)
 def get_product_by_id(product_id: int, db: Session = Depends(get_db)):
     return controllers.get_product_by_id(product_id, db)
 
-@product_router.post('/', status_code=201)
+@product_router.post('', status_code=201, response_model=schemas.ProductResponse)
 def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
     return controllers.create_product(product, db)
 
-@product_router.put('/{product_id}') 
+@product_router.put('/{product_id}', response_model=schemas.ProductResponse) 
 def update_product(product_id: int, product: schemas.ProductUpdate, db: Session = Depends(get_db)):
     return controllers.update_product(product_id, product, db)
 
@@ -31,21 +32,21 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
 
 
 # product group router
-product_group_router = APIRouter(prefix="/product/group", tags=['Product Group'])
+product_group_router = APIRouter(prefix="/group", tags=['Product Group'])
 
-@product_group_router.get('/')
+@product_group_router.get('', response_model=List[schemas.ProductGroupResponse])
 def get_product_groups(db: Session = Depends(get_db)):
     return controllers.get_product_groups(db)
 
-@product_group_router.get('/{group_id}')
+@product_group_router.get('/{group_id}', response_model=schemas.ProductGroupResponse)
 def get_product_group_by_id(group_id: int, db: Session = Depends(get_db)):
     return controllers.get_product_group_by_id(group_id, db)
 
-@product_group_router.post('/', status_code=201)
+@product_group_router.post('', status_code=201, response_model=schemas.ProductGroupResponse)
 def create_product_group(group: schemas.ProductGroupCreate, db: Session = Depends(get_db)):
     return controllers.create_product_group(group, db)
 
-@product_group_router.put('/{group_id}')
+@product_group_router.put('/{group_id}', response_model=schemas.ProductGroupResponse)
 def update_product_group(group_id: int, group: schemas.ProductGroupUpdate, db: Session = Depends(get_db)):
     return controllers.update_product_group(group_id, group, db)
 
@@ -55,16 +56,16 @@ def delete_product_group(group_id: int, db: Session = Depends(get_db)):
 
 
 # product category router
-product_category_router = APIRouter(prefix="/product/category", tags=['Product Category'])
-@product_category_router.get('/')
+product_category_router = APIRouter(prefix="/category", tags=['Product Category'])
+@product_category_router.get('', response_model=List[schemas.ProductCategoryResponse])
 def get_product_categories(db: Session = Depends(get_db)):
     return controllers.get_product_categories(db)
 
-@product_category_router.get('/{category_id}')
+@product_category_router.get('/{category_id}', response_model=schemas.ProductCategoryResponse)
 def get_product_category_by_id(category_id: int, db: Session = Depends(get_db)):
     return controllers.get_product_category_by_id(category_id, db)
 
-@product_category_router.post('/', status_code=201)
+@product_category_router.post('', status_code=201)
 def create_product_category(category: schemas.ProductCategoryCreate, db: Session = Depends(get_db)):
     return controllers.create_product_category(category, db)
 

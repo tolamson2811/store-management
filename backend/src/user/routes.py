@@ -24,19 +24,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         )
     return data_authorize
 
-@router.get('')
+@router.get('', response_model=list[schemas.UserResponse])
 def get_users(db: Session = Depends(get_db)):
     return controllers.get_users(db)
 
-@router.get('/email/{email}')
+@router.get('/email/{email}', response_model=schemas.UserResponse)
 def get_user_by_email(email: str, db: Session = Depends(get_db)):
     return controllers.get_user_by_email(email, db)
 
-@router.get('/user_id/{user_id}')
+@router.get('/user_id/{user_id}', response_model=schemas.UserResponse)
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return controllers.get_user_by_id(user_id, db)
   
-@router.post('', status_code=201)
+@router.post('', status_code=201, response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return controllers.create_user(user, db)
 
@@ -59,19 +59,19 @@ def delete_user(user_id: int, db: Session = Depends(get_db), token: dict = Depen
     return controllers.delete_user(user_id, db, token)
 
 # transaction 
-@transaction_router.get('')
+@transaction_router.get('', response_model=list[schemas.TransactionResponse])
 def get_transactions(db: Session = Depends(get_db)):
     return controllers.get_transactions(db)
 
-@transaction_router.get("/{transaction_id}")
+@transaction_router.get("/{transaction_id}" , response_model=schemas.TransactionResponse)
 def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
     return controllers.get_transaction(transaction_id, db)
 
-@transaction_router.get('/user/{user_id}')
+@transaction_router.get('/user/{user_id}', response_model=list[schemas.TransactionResponse])
 def get_transactions(user_id: int, db: Session = Depends(get_db)):
     return controllers.get_transaction_by_user_id(user_id, db)
 
-@transaction_router.post('', status_code=201)
+@transaction_router.post('', status_code=201, response_model=schemas.TransactionResponse)
 def create_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db), token: dict = Depends(get_current_user)):
     return controllers.create_transaction(transaction, db)
 

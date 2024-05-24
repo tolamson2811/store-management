@@ -24,9 +24,9 @@ class Transaction(Base):
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    old_amount = Column(DECIMAL, nullable=False)
-    new_amount = Column(DECIMAL, nullable=False)
-    total_amount = Column(DECIMAL)
+    old_amount = Column(DECIMAL, default=0, nullable=False)
+    new_amount = Column(DECIMAL, default=0, nullable=False)
+    total_amount = Column(DECIMAL, default=0, nullable=False)
     transaction_type = Column(String, nullable=False)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))

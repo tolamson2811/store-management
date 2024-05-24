@@ -6,38 +6,46 @@ from product import models
 from product import schemas
 from product import validation
 from unidecode import unidecode
+from typing import List
 
 
 # Product controller 
-def get_products(db: Session = Depends(get_db)):
-    return db.query(models.Product).all()
+def get_products(db: Session = Depends(get_db)) -> List[schemas.ProductResponse]:
+    db_products = db.query(models.Product).all()
+    if not db_products:
+        raise HTTPException(status_code=404, detail="Products not found")
+    
+    return [schemas.ProductResponse.model_validate(product) for product in db_products]
 
-def get_product_by_id(product_id: int, db: Session = Depends(get_db)):
+
+def get_product_by_id(product_id: int, db: Session = Depends(get_db)) -> schemas.ProductResponse:
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    return schemas.ProductResponse.model_validate(product)
 
-def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
+def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)) -> schemas.ProductResponse:
     if not validation.check_product_group_valid(product.group_id, db):
         raise HTTPException(status_code=404, detail="Product group not found")
     if not validation.check_product_category_valid(product.category_id, db):
         raise HTTPException(status_code=404, detail="Product category not found")
     
-    db_product = models.Product(name=product.name, image=product.image, price=product.price, discount_price=product.discount_price, quantity=product.quantity, description=product.description, supplier=product.supplier, group_id=product.group_id, category_id=product.category_id, created_at=product.created_at, updated_at=product.updated_at)
+    # db_product = models.Product(name=product.name, image=product.image, price=product.price, discount_price=product.discount_price, quantity=product.quantity, description=product.description, supplier=product.supplier, group_id=product.group_id, category_id=product.category_id, created_at=product.created_at, updated_at=product.updated_at)
+    db_product = models.Product(**product.model_dump())
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
-    return db_product
+    return schemas.ProductResponse.model_validate(db_product)
 
-def update_product(product_id: int, product: schemas.ProductUpdate, db: Session = Depends(get_db)):
+def update_product(product_id: int, product: schemas.ProductUpdate, db: Session = Depends(get_db)) -> schemas.ProductResponse:
     db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
-    db_product.name = product.name
-    db_product.price = product.price
-    db_product.description = product.description
-    db_product.updated_at = product.updated_at
+    
+    update_data = product.model_dump(exclude_unset=True)
+    
+    db.query(models.Product).filter(models.Product.id == product_id).update(update_data)
+    
     db.commit()
     db.refresh(db_product)
     return db_product
@@ -51,31 +59,39 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     return {"message": "Product deleted successfully"}
 
 # product group controller 
-def get_product_groups(db: Session = Depends(get_db)):
-    return db.query(models.ProductGroup).all()
+def get_product_groups(db: Session = Depends(get_db)) -> List[schemas.ProductGroupResponse]:
+    db_groups = db.query(models.ProductGroup).all()
+    if not db_groups:
+        raise HTTPException(status_code=404, detail="Product groups not found")
+    
+    return [schemas.ProductGroupResponse.model_validate(group) for group in db_groups]
 
-def get_product_group_by_id(group_id: int, db: Session = Depends(get_db)):
+def get_product_group_by_id(group_id: int, db: Session = Depends(get_db)) -> schemas.ProductGroupResponse:
     group = db.query(models.ProductGroup).filter(models.ProductGroup.id == group_id).first()
     if group is None:
         raise HTTPException(status_code=404, detail="Product group not found")
-    return group
+    return schemas.ProductGroupResponse.model_validate(group)
 
-def create_product_group(group: schemas.ProductGroupCreate, db: Session = Depends(get_db)):
-    db_group = models.ProductGroup(name=group.name, created_at=group.created_at)
+def create_product_group(group: schemas.ProductGroupCreate, db: Session = Depends(get_db)) -> schemas.ProductGroupResponse:
+    db_group = models.ProductGroup(**group.model_dump())
     db.add(db_group)
     db.commit()
     db.refresh(db_group)
     return db_group
 
-def update_product_group(group_id: int, group: schemas.ProductGroupUpdate, db: Session = Depends(get_db)):
+def update_product_group(group_id: int, group: schemas.ProductGroupUpdate, db: Session = Depends(get_db)) -> schemas.ProductGroupResponse:
     db_group = db.query(models.ProductGroup).filter(models.ProductGroup.id == group_id).first()
     if not db_group:
         raise HTTPException(status_code=404, detail="Product group not found")
-    db_group.name = group.name
-    db_group.updated_at = group.updated_at
+    
+    update_data = group.model_dump(exclude_unset=True)
+    
+    db.query(models.ProductGroup).filter(models.ProductGroup.id == group_id).update(update_data)
+    
     db.commit()
     db.refresh(db_group)
-    return db_group
+    
+    return schemas.ProductGroupResponse.model_validate(db_group)
 
 def delete_product_group(group_id: int, db: Session = Depends(get_db)):
     db_group = db.query(models.ProductGroup).filter(models.ProductGroup.id == group_id).first()
@@ -86,35 +102,41 @@ def delete_product_group(group_id: int, db: Session = Depends(get_db)):
     return {"message": "Product group deleted successfully"}
 
 # product category controller 
-def get_product_categories(db: Session = Depends(get_db)):
-    return db.query(models.ProductCategory).all()
+def get_product_categories(db: Session = Depends(get_db)) -> List[schemas.ProductCategoryResponse]:
+    db_categories = db.query(models.ProductCategory).all()
+    if not db_categories:
+        raise HTTPException(status_code=404, detail="Product categories not found")
 
-def get_product_category_by_id(category_id: int, db: Session = Depends(get_db)):
+    return [schemas.ProductCategoryResponse.model_validate(category) for category in db_categories]
+
+def get_product_category_by_id(category_id: int, db: Session = Depends(get_db)) -> schemas.ProductCategoryResponse:
     category = db.query(models.ProductCategory).filter(models.ProductCategory.id == category_id).first()
     if category is None:
         raise HTTPException(status_code=404, detail="Product category not found")
-    return category
+    return schemas.ProductCategoryResponse.model_validate(category)
 
-def create_product_category(category: schemas.ProductCategoryCreate, db: Session = Depends(get_db)):
+def create_product_category(category: schemas.ProductCategoryCreate, db: Session = Depends(get_db)) -> schemas.ProductCategoryResponse:
     if not validation.check_product_group_valid(category.group_id, db):
         raise HTTPException(status_code=404, detail="Product group not found")
     
-    
-    db_category = models.ProductCategory(name=category.name, group_id=category.group_id, created_at=category.created_at)
+    db_category = models.ProductCategory(**category.model_dump())    
+
     db.add(db_category)
     db.commit()
     db.refresh(db_category)
-    return db_category
+    return schemas.ProductCategoryResponse.model_validate(db_category)
 
-def update_product_category(category_id: int, category: schemas.ProductCategoryUpdate, db: Session = Depends(get_db)):    
+def update_product_category(category_id: int, category: schemas.ProductCategoryUpdate, db: Session = Depends(get_db)) -> schemas.ProductCategoryResponse:    
     db_category = db.query(models.ProductCategory).filter(models.ProductCategory.id == category_id).first()
     if not db_category:
         raise HTTPException(status_code=404, detail="Product category not found")
-    db_category.name = category.name
-    db_category.updated_at = category.updated_at
+    
+    update_data = category.model_dump(exclude_unset=True)
+    db.query(models.ProductCategory).filter(models.ProductCategory.id == category_id).update(update_data)
+    
     db.commit()
     db.refresh(db_category)
-    return db_category
+    return schemas.ProductCategoryResponse.model_validate(db_category)
 
 def delete_product_category(category_id: int, db: Session = Depends(get_db)):
     db_category = db.query(models.ProductCategory).filter(models.ProductCategory.id == category_id).first()
@@ -125,7 +147,7 @@ def delete_product_category(category_id: int, db: Session = Depends(get_db)):
     return {"message": "Product category deleted successfully"}
 
 # search controller 
-def search_products(form: schemas.ProductSearch, db: Session = Depends(get_db)):
+def search_products(form: schemas.ProductSearch, db: Session = Depends(get_db)) -> schemas.ProductResponse:
     query = db.query(models.Product).join(models.ProductCategory).join(models.ProductGroup)
     if form.group_name:
         form.group_name = form.group_name.strip()
@@ -149,4 +171,10 @@ def search_products(form: schemas.ProductSearch, db: Session = Depends(get_db)):
         query = query.filter(models.Product.discount_price > 0)
     if form.quantity is True:
         query = query.filter(models.Product.quantity > 0)
-    return query.all()
+    
+    db_products = query.all()
+    
+    if not db_products:
+        raise HTTPException(status_code=404, detail="Products not found")
+    
+    return [schemas.ProductResponse.model_validate(product) for product in db_products]

@@ -4,58 +4,55 @@ from decimal import Decimal
 from typing import Optional
 
 # Order schema 
-class Order(BaseModel):
+class OrderBase(BaseModel):
     id: int
     user_id: int
     total_amount: Decimal
-    order_date: datetime
-    updated_at: datetime
     
-    class Config:
-        orm_mode = True
-        
-class OrderCreate(BaseModel):
+class OrderCreate(OrderBase):
     user_id: int
     total_amount: Decimal
     order_date: datetime
     
-    class Config:
-        orm_mode = True
-        
-class OrderUpdate(BaseModel):
+class OrderUpdate(OrderBase):
     user_id: Optional[int]
     total_amount: Optional[Decimal]
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
-        
+class OrderResponse(BaseModel):
+    id: int
+    user_id: int
+    total_amount: Decimal
+    order_date: datetime
+    updated_at: datetime
+    
+    model_config = {
+        "from_attributes": True
+    }
+    
 # Order detail schema 
 class OrderDetail(BaseModel):
-    id: int
-    order_id: int
     product_id: int
     quantity: int
     unit_price: Decimal
     
-    class Config:
-        orm_mode = True
-        
-class OrderDetailCreate(BaseModel):
+class OrderDetailCreate(OrderDetail):
+    order_id: int
+    created_at: datetime
+    
+class OrderDetailUpdate(OrderDetail):
+    updated_at: datetime
+    
+class OrderDetailResponse(BaseModel):
+    id: int
     order_id: int
     product_id: int
     quantity: int
     unit_price: Decimal
     created_at: datetime
-    
-    class Config:
-        orm_mode = True
-        
-class OrderDetailUpdate(BaseModel):
-    product_id: Optional[int]
-    quantity: Optional[int]
-    unit_price: Optional[Decimal]
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
+    
